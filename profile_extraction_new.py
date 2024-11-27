@@ -243,6 +243,8 @@ if file is not None:
 
     # Map the clusters in dilworth_preprocessed to the new labels
     dilworth_preprocessed['Clusters'] = dilworth_preprocessed['Clusters'].map(cluster_mapping)
+    PCA_df['Clusters'] = PCA_df['Clusters'].map(cluster_mapping)
+
 
     # Check the updated Clusters column
     # st.write(dilworth_preprocessed['Clusters'].value_counts())
