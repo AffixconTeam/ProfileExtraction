@@ -381,14 +381,41 @@ if file is not None:
     # profiles_selected = profiles_selected.T.sort_values('Cluster_percentage', ascending=False)
     # profiles_selected.index = [f'Group_{i}' for i in range(1,len(cluster_percentages)+1)]
     profiles_selected = profiles_selected.T
+
+    for i in range(1, optimal_clusters + 1):
+        ranges = profiles_selected.loc['AgeRangeNew', f'Group_{i}']
+        
+        if ranges != "": 
+            value_ranges = ranges.split(', ')
+            values = [int(r.split('-')[0]) for r in value_ranges]
+            lowest_value = min(values)
+            highest_value = max([int(r.split('-')[1]) for r in value_ranges])
+            age_range = (f'{lowest_value} - {highest_value}')
+            profiles_selected.loc['AgeRangeNew', f'Group_{i}'] = age_range
+            
+        else:
+            continue
+    
+    import re
+    def replace_with_k_format(ranges):
+        # Regex to find ranges like '70,001 - 100,000'
+        return re.sub(r'(\d{1,3}(?:,\d{3})*) - (\d{1,3}(?:,\d{3})*)', lambda m: f"{int(m.group(1).replace(',', '')) // 1000}K - {int(m.group(2).replace(',', '')) // 1000}K", ranges)
+
+    for i in range(1, optimal_clusters + 1):
+        # Extract the ranges for the current group
+        income_ranges = profiles_selected.loc['IncomeRange', f'Group_{i}']
+        modified_ranges = replace_with_k_format(income_ranges)
+        profiles_selected.loc['IncomeRange', f'Group_{i}'] = modified_ranges
+
     st.dataframe(profiles_selected,width=1700)
+
 
 
 
 
     #------------------------------------------------------------Profile Selection ----------------------------
     # for col in breakdowns_all.columns:
-    groups = st.multiselect("Select Groups", profiles_selected.columns, default=profiles_selected.columns)
+    groups = sorted(st.multiselect("Select Groups", profiles_selected.columns, default=profiles_selected.columns))
     selected_columns = ['Sample_Count', 'Sample_Percentage','Category'] + [col for col in breakdowns_all.columns if any(group in col for group in groups)]
 
     breakdowns_all = breakdowns_all[selected_columns]
@@ -462,8 +489,34 @@ if file is not None:
     # st.dataframe(new_profiles_selected,width=1500)
     new_profiles_selected = new_profiles_selected.T.sort_values('Cluster_percentage',ascending=False)
     new_profiles_selected.index = rename_cols
+    new_profiles_selected = new_profiles_selected.T
     # for col in breakdowns_all.columns:\
 
-    st.dataframe(new_profiles_selected.T,width=1500)
+    for i in range(1, len(groups)+1):
+        ranges = new_profiles_selected.loc['AgeRangeNew', f'Group_{i}']
+        
+        if ranges != "": 
+            value_ranges = ranges.split(', ')
+            values = [int(r.split('-')[0]) for r in value_ranges]
+            lowest_value = min(values)
+            highest_value = max([int(r.split('-')[1]) for r in value_ranges])
+            age_range = (f'{lowest_value} - {highest_value}')
+            new_profiles_selected.loc['AgeRangeNew', f'Group_{i}'] = age_range
+            
+        else:
+            continue
+    
+    import re
+    def replace_with_k_format(ranges):
+        # Regex to find ranges like '70,001 - 100,000'
+        return re.sub(r'(\d{1,3}(?:,\d{3})*) - (\d{1,3}(?:,\d{3})*)', lambda m: f"{int(m.group(1).replace(',', '')) // 1000}K - {int(m.group(2).replace(',', '')) // 1000}K", ranges)
+
+    for i in range(1, len(groups)+1):
+        # Extract the ranges for the current group
+        income_ranges = new_profiles_selected.loc['IncomeRange', f'Group_{i}']
+        modified_ranges = replace_with_k_format(income_ranges)
+        new_profiles_selected.loc['IncomeRange', f'Group_{i}'] = modified_ranges
+
+    st.dataframe(new_profiles_selected,width=1500)
 
 
