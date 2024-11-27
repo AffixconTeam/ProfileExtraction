@@ -202,7 +202,7 @@ def remove_empty_elements_from_string(lst_str):
 file = st.sidebar.file_uploader('Choose a File')
 if file is not None:
     data = pd.read_csv(file, encoding = 'latin1' )
-    dilworth = data[data['File Name']=='Dilworth']
+    dilworth = data
 
     scaled_df = normalization(dilworth)
     PCA_df = Dimensional_Reduction(dilworth)
@@ -235,6 +235,17 @@ if file is not None:
     PCA_df["Clusters"] = yhat_AC+1
     dilworth_preprocessed = preprocss(dilworth)
     dilworth_preprocessed["Clusters"] = yhat_AC+1
+
+    cluster_counts = dilworth_preprocessed['Clusters'].value_counts()
+
+    # Create a mapping from the old cluster labels to new labels based on the rank of counts
+    cluster_mapping = {old_label: idx + 1 for idx, old_label in enumerate(cluster_counts.index)}
+
+    # Map the clusters in dilworth_preprocessed to the new labels
+    dilworth_preprocessed['Clusters'] = dilworth_preprocessed['Clusters'].map(cluster_mapping)
+
+    # Check the updated Clusters column
+    # st.write(dilworth_preprocessed['Clusters'].value_counts())
 
     fig = px.scatter_3d(
         PCA_df, 
@@ -380,6 +391,8 @@ if file is not None:
     profiles_selected = pd.concat([profiles_selected, cluster_percentages_df], axis=0).T
     # profiles_selected = profiles_selected.T.sort_values('Cluster_percentage', ascending=False)
     # profiles_selected.index = [f'Group_{i}' for i in range(1,len(cluster_percentages)+1)]
+    # st.write(profiles_selected.sort_values('Cluster_percentage', ascending=False))
+
     profiles_selected = profiles_selected.T
 
     for i in range(1, optimal_clusters + 1):
