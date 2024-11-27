@@ -372,7 +372,21 @@ if file is not None:
     profiles_selected = profiles_selected.applymap(remove_empty_elements_from_string)
     profiles_selected = profiles_selected.apply(lambda x: x.replace(r"[\[\]']", '', regex=True))
 
-    st.dataframe(profiles_selected,width=1500)
+    # st.dataframe(profiles_selected,width=1500)
+    cluster_percentages = np.ceil(dilworth_preprocessed['Clusters'].value_counts(normalize=True) * 100)
+    cluster_percentages_df = cluster_percentages.to_frame().T  
+    cluster_percentages_df.index = ["Cluster_percentage"]    
+    cluster_percentages_df.columns = [f'Group_{i}' for i in cluster_percentages.index]
+    profiles_selected = pd.concat([profiles_selected, cluster_percentages_df], axis=0).T
+    # profiles_selected = profiles_selected.T.sort_values('Cluster_percentage', ascending=False)
+    # profiles_selected.index = [f'Group_{i}' for i in range(1,len(cluster_percentages)+1)]
+    profiles_selected = profiles_selected.T
+    st.dataframe(profiles_selected,width=1700)
+
+
+
+
+    #------------------------------------------------------------Profile Selection ----------------------------
     # for col in breakdowns_all.columns:
     groups = st.multiselect("Select Groups", profiles_selected.columns, default=profiles_selected.columns)
     selected_columns = ['Sample_Count', 'Sample_Percentage','Category'] + [col for col in breakdowns_all.columns if any(group in col for group in groups)]
@@ -442,9 +456,14 @@ if file is not None:
     new_profiles_selected = profiles_selected[relaive_cols]
     rename_cols = [f'Group_{i}' for i in range(1,len(results)+1)]
     new_profiles_selected.columns = rename_cols
-    st.dataframe(new_profiles_selected,width=1500)
+    new_cluster_percentages_df = cluster_percentages_df[groups]
+    new_cluster_percentages_df.columns = rename_cols
+    new_profiles_selected = pd.concat([new_profiles_selected, new_cluster_percentages_df], axis=0)
+    # st.dataframe(new_profiles_selected,width=1500)
+    new_profiles_selected = new_profiles_selected.T.sort_values('Cluster_percentage',ascending=False)
+    new_profiles_selected.index = rename_cols
     # for col in breakdowns_all.columns:\
 
-    # st.write(breakdowns_all)
+    st.dataframe(new_profiles_selected.T,width=1500)
 
 
