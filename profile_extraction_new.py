@@ -422,6 +422,31 @@ if file is not None:
         modified_ranges = replace_with_k_format(income_ranges)
         profiles_selected.loc['IncomeRange', f'Group_{i}'] = modified_ranges
 
+
+    def sort_income_ranges(value):
+        if value and isinstance(value, str):  # Check for non-empty and string values
+            ranges = value.split(", ")
+            sorted_ranges = sorted(ranges, key=lambda x: int(''.join(filter(str.isdigit, x.split("K")[0].replace("M", "000").replace("k", "000").replace(" ", "")))))
+            return ", ".join(sorted_ranges)
+        return value  # Return the original value if it's empty or invalid
+
+    # Function to sort PropertyValueRange values
+    def sort_property_value_ranges(value):
+        if value and isinstance(value, str):  # Check for non-empty and string values
+            ranges = value.split(", ")
+            sorted_ranges = sorted(ranges, key=lambda x: int(''.join(filter(str.isdigit, x.split("-")[0].replace("M", "000").replace("k", "000").replace("+", "000").replace(" ", "")))))
+            return ", ".join(sorted_ranges)
+        return value  # Return the original value if it's empty or invalid
+
+    # Apply sorting to both "IncomeRange" and "PropertyValueRange"
+    for idx in ['IncomeRange', 'PropertyValueRange']:
+        if idx in profiles_selected.index:
+            for col in profiles_selected.columns:
+                # Apply sorting only for these specific rows
+                if idx == 'IncomeRange':
+                    profiles_selected.loc[idx, col] = sort_income_ranges(profiles_selected.loc[idx, col])
+                elif idx == 'PropertyValueRange':
+                    profiles_selected.loc[idx, col] = sort_property_value_ranges(profiles_selected.loc[idx, col])
     st.dataframe(profiles_selected,width=1700)
 
     # test2 = breakdowns_all[['Category'] + [f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]]
@@ -457,7 +482,7 @@ if file is not None:
 
         # Convert to HTML and display as one table
         full_html = styled_df.to_html()
-        with st.expander(f"View {' '.join(group.split('_')[:2])}"):
+        with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
             st.markdown(full_html, unsafe_allow_html=True)
 
 
@@ -567,6 +592,15 @@ if file is not None:
         modified_ranges = replace_with_k_format(income_ranges)
         new_profiles_selected.loc['IncomeRange', f'Group_{i}'] = modified_ranges
 
+    for idx in ['IncomeRange', 'PropertyValueRange']:
+        if idx in new_profiles_selected.index:
+            for col in new_profiles_selected.columns:
+                # Apply sorting only for these specific rows
+                if idx == 'IncomeRange':
+                    new_profiles_selected.loc[idx, col] = sort_income_ranges(new_profiles_selected.loc[idx, col])
+                elif idx == 'PropertyValueRange':
+                    new_profiles_selected.loc[idx, col] = sort_property_value_ranges(new_profiles_selected.loc[idx, col])
+
     st.dataframe(new_profiles_selected,width=1500)
 
 
@@ -599,5 +633,5 @@ if file is not None:
 
         # Convert to HTML and display as one table
         full_html = styled_df.to_html()
-        with st.expander(f"View {' '.join(group.split('_')[:2])}"):
+        with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
             st.markdown(full_html, unsafe_allow_html=True)
