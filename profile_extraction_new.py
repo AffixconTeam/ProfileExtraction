@@ -461,7 +461,7 @@ if file is not None:
         for col in cols_del:
             # Filter and compute threshold
             demog = test2[test2['Category'] == col][[group]].copy()
-            demog['Threshold_Diff'] = np.where(
+            demog['Threshold Index'] = np.where(
                 col != "IncomeRange",
                 demog[group] - Threshold('ProfileType'),
                 demog[group] - Threshold('IncomeRange'))
@@ -475,7 +475,7 @@ if file is not None:
 
         # Apply styling to the concatenated DataFrame
         styled_df = concatenated_df.style.bar(
-            subset=['Threshold_Diff'],  
+            subset=['Threshold Index'],  
             align='mid',
             color=['#d65f5f', '#5fba7d']
         )
@@ -612,7 +612,7 @@ if file is not None:
         for col in cols_del:
             # Filter and compute threshold
             demog = test2[test2['Category'] == col][[group]].copy()
-            demog['Threshold_Diff'] = np.where(
+            demog['Threshold Index'] = np.where(
                 col != "IncomeRange",
                 demog[group] - Threshold('ProfileType'),
                 demog[group] - Threshold('IncomeRange'))
@@ -626,7 +626,7 @@ if file is not None:
 
         # Apply styling to the concatenated DataFrame
         styled_df = concatenated_df.style.bar(
-            subset=['Threshold_Diff'],  
+            subset=['Threshold Index'],  
             align='mid',
             color=['#d65f5f', '#5fba7d']
         )
