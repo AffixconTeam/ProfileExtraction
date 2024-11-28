@@ -424,6 +424,41 @@ if file is not None:
 
     st.dataframe(profiles_selected,width=1700)
 
+    # test2 = breakdowns_all[['Category'] + [f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]]
+    # test2_df = test2[test2['Category'] == 'ProfileType']
+    # st.write(test2[test2['Category'] == 'ProfileType'])
+    # st.write(test2_df[test2_df.drop(columns='Category',axis=1)>profile_thresold])
+    test2 = breakdowns_all[['Category']+[f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]]
+    groups = [f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]
+    for group in groups:
+        group_data = []  # Collect DataFrames for each group
+
+        for col in cols_del:
+            # Filter and compute threshold
+            demog = test2[test2['Category'] == col][[group]].copy()
+            demog['Threshold_Diff'] = np.where(
+                col != "IncomeRange",
+                demog[group] - Threshold('ProfileType'),
+                demog[group] - Threshold('IncomeRange'))
+            demog = demog.sort_values(by=group, ascending=False)
+            demog = demog[~demog.index.str.startswith("empty_")]
+            demog['Category'] = col  # Add category column for clarity
+            group_data.append(demog)
+
+        # Concatenate all DataFrames for the group
+        concatenated_df = pd.concat(group_data, axis=0)
+
+        # Apply styling to the concatenated DataFrame
+        styled_df = concatenated_df.style.bar(
+            subset=['Threshold_Diff'],  
+            align='mid',
+            color=['#d65f5f', '#5fba7d']
+        )
+
+        # Convert to HTML and display as one table
+        full_html = styled_df.to_html()
+        with st.expander(f"View {' '.join(group.split('_')[:2])}"):
+            st.markdown(full_html, unsafe_allow_html=True)
 
 
 
@@ -535,3 +570,34 @@ if file is not None:
     st.dataframe(new_profiles_selected,width=1500)
 
 
+    test2 = breakdowns_all[['Category']+[f'Group_{i}_Relative_Percentage' for i in range(1,len(groups)+1)]]
+    groups = [f'Group_{i}_Relative_Percentage' for i in range(1,len(groups)+1)]
+    for group in groups:
+        group_data = []  # Collect DataFrames for each group
+
+        for col in cols_del:
+            # Filter and compute threshold
+            demog = test2[test2['Category'] == col][[group]].copy()
+            demog['Threshold_Diff'] = np.where(
+                col != "IncomeRange",
+                demog[group] - Threshold('ProfileType'),
+                demog[group] - Threshold('IncomeRange'))
+            demog = demog.sort_values(by=group, ascending=False)
+            demog = demog[~demog.index.str.startswith("empty_")]
+            demog['Category'] = col  # Add category column for clarity
+            group_data.append(demog)
+
+        # Concatenate all DataFrames for the group
+        concatenated_df = pd.concat(group_data, axis=0)
+
+        # Apply styling to the concatenated DataFrame
+        styled_df = concatenated_df.style.bar(
+            subset=['Threshold_Diff'],  
+            align='mid',
+            color=['#d65f5f', '#5fba7d']
+        )
+
+        # Convert to HTML and display as one table
+        full_html = styled_df.to_html()
+        with st.expander(f"View {' '.join(group.split('_')[:2])}"):
+            st.markdown(full_html, unsafe_allow_html=True)
