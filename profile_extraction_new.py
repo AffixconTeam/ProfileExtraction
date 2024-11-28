@@ -210,10 +210,11 @@ if file is not None:
     
     Elbow_M = KElbowVisualizer(KMeans(random_state=42), k=10)
     Elbow_M.fit(Dimensional_Reduction(dilworth))
-    Elbow_M.ax.set_title("Elbow Method for Optimal Clusters")
+    Elbow_M.ax.set_title("Elbow Method for Optimal Groups")
+    Elbow_M.ax.set_xlabel("No of Groups")
     col1,col2,col3 = st.columns((3))
     with col1:
-        with st.expander(":red[Show Optimal Cluster Selection]"):
+        with st.expander(":red[Show Optimal Group Selection]"):
             st.pyplot(Elbow_M.ax.figure)
     
     inertia_list = []
@@ -255,18 +256,19 @@ if file is not None:
         y="col2", 
         z="col3", 
         color='Clusters', 
-        title="All Groups as clusters"
+        # title="All Groups as clusters"
     )
 
     with col2:
-        with st.expander(":red[Show 3d Cluster Separation]"):
+        with st.expander(":red[Show 3d Group Separation]"):
             st.plotly_chart(fig)
 
     with col3:
         pal = ["#682F2F", "#B9C0C9", "#9F8A78", "#F3AB60"]
         fig, ax = plt.subplots(figsize=(8, 6))
         pl = sns.countplot(x=dilworth_preprocessed["Clusters"], palette=pal, ax=ax)
-        pl.set_title("Distribution Of The Clusters")
+        ax.set_xlabel('Groups')
+        # pl.set_title("Distribution Of The Clusters")
         total = len(dilworth_preprocessed["Clusters"])
         for patch in ax.patches:
             height = patch.get_height()
@@ -274,7 +276,7 @@ if file is not None:
             ax.annotate(percentage, (patch.get_x() + patch.get_width() / 2, height),
                         ha="center", va="bottom", fontsize=10)
 
-        with st.expander(":red[Show Distribution of Clusters]"):
+        with st.expander(":red[Show Distribution of Groups]"):
             st.pyplot(fig)
 
 
@@ -388,7 +390,7 @@ if file is not None:
     # st.dataframe(profiles_selected,width=1500)
     cluster_percentages = np.ceil(dilworth_preprocessed['Clusters'].value_counts(normalize=True) * 100)
     cluster_percentages_df = cluster_percentages.to_frame().T  
-    cluster_percentages_df.index = ["Cluster_percentage"]    
+    cluster_percentages_df.index = ["Group_percentage"]    
     cluster_percentages_df.columns = [f'Group_{i}' for i in cluster_percentages.index]
     profiles_selected = pd.concat([profiles_selected, cluster_percentages_df], axis=0).T
     # profiles_selected = profiles_selected.T.sort_values('Cluster_percentage', ascending=False)
@@ -447,8 +449,13 @@ if file is not None:
                     profiles_selected.loc[idx, col] = sort_income_ranges(profiles_selected.loc[idx, col])
                 elif idx == 'PropertyValueRange':
                     profiles_selected.loc[idx, col] = sort_property_value_ranges(profiles_selected.loc[idx, col])
-    st.dataframe(profiles_selected,width=1700)
+    cols_rename_new = {'ProfileType':'Contact Plus Profiles','IncomeRange':'Income', 'DirShr_Category':'Company Office', 'NewHomeOwner':'HomeOwner', 'GenderNew':'Gender', 'AgeRangeNew':'AgeRange', 'PropertyValueRange':'PropertyValue'}   
+    st.dataframe(profiles_selected.rename(cols_rename_new),width=1700)
 
+    st.markdown(
+        "<h4 style='text-align: center; color: green;'>Grouped Detailed Breakdowns:</h4>",
+        unsafe_allow_html=True
+    )
     # test2 = breakdowns_all[['Category'] + [f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]]
     # test2_df = test2[test2['Category'] == 'ProfileType']
     # st.write(test2[test2['Category'] == 'ProfileType'])
@@ -461,7 +468,7 @@ if file is not None:
         for col in cols_del:
             # Filter and compute threshold
             demog = test2[test2['Category'] == col][[group]].copy()
-            demog['Threshold Index'] = np.where(
+            demog['Threshold Value'] = np.where(
                 col != "IncomeRange",
                 demog[group] - Threshold('ProfileType'),
                 demog[group] - Threshold('IncomeRange'))
@@ -475,7 +482,7 @@ if file is not None:
 
         # Apply styling to the concatenated DataFrame
         styled_df = concatenated_df.style.bar(
-            subset=['Threshold Index'],  
+            subset=['Threshold Value'],  
             align='mid',
             color=['#d65f5f', '#5fba7d']
         )
@@ -483,7 +490,20 @@ if file is not None:
         # Convert to HTML and display as one table
         full_html = styled_df.to_html()
         with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
-            st.markdown(full_html, unsafe_allow_html=True)
+            col11, col12 = st.columns((0.6,0.4))
+            with col11:
+                st.markdown(full_html, unsafe_allow_html=True)
+            with col12:
+                st.write("""
+                    :green[**Threshold graphs are based on the following criteria**]
+                    - :orange[**Weight Significance:** Percentages of each group attribute calculated to indicate their significance as weight.]
+                    - :orange[**Distributed Percentages:** Percentages distributed across attributes among the groups.]
+                    - :orange[**Relative Percentage:** Represents each attribute's significance relative to the entire sample data.]
+                    - :orange[**Threshold Value:** Derived from the distribution using mean and standard deviation.]
+                    - :orange[**Positive Difference Selection:** Attributes with positive differences between actual and threshold values are selected.]
+                    - :orange[**Sorting:** Attributes sorted in descending order of the threshold value, visualized from :green[green] to :red[red.]]
+
+                         """)
 
 
 
@@ -562,7 +582,7 @@ if file is not None:
     new_cluster_percentages_df.columns = rename_cols
     new_profiles_selected = pd.concat([new_profiles_selected, new_cluster_percentages_df], axis=0)
     # st.dataframe(new_profiles_selected,width=1500)
-    new_profiles_selected = new_profiles_selected.T.sort_values('Cluster_percentage',ascending=False)
+    new_profiles_selected = new_profiles_selected.T.sort_values('Group_percentage',ascending=False)
     new_profiles_selected.index = rename_cols
     new_profiles_selected = new_profiles_selected.T
     # for col in breakdowns_all.columns:\
@@ -601,8 +621,11 @@ if file is not None:
                 elif idx == 'PropertyValueRange':
                     new_profiles_selected.loc[idx, col] = sort_property_value_ranges(new_profiles_selected.loc[idx, col])
 
-    st.dataframe(new_profiles_selected,width=1500)
-
+    st.dataframe(new_profiles_selected.rename(cols_rename_new),width=1500)
+    st.markdown(
+        "<h4 style='text-align: center; color: green;'>Grouped Detailed Breakdowns:</h4>",
+        unsafe_allow_html=True
+    )
 
     test2 = breakdowns_all[['Category']+[f'Group_{i}_Relative_Percentage' for i in range(1,len(groups)+1)]]
     groups = [f'Group_{i}_Relative_Percentage' for i in range(1,len(groups)+1)]
@@ -612,7 +635,7 @@ if file is not None:
         for col in cols_del:
             # Filter and compute threshold
             demog = test2[test2['Category'] == col][[group]].copy()
-            demog['Threshold Index'] = np.where(
+            demog['Threshold Value'] = np.where(
                 col != "IncomeRange",
                 demog[group] - Threshold('ProfileType'),
                 demog[group] - Threshold('IncomeRange'))
@@ -626,7 +649,7 @@ if file is not None:
 
         # Apply styling to the concatenated DataFrame
         styled_df = concatenated_df.style.bar(
-            subset=['Threshold Index'],  
+            subset=['Threshold Value'],  
             align='mid',
             color=['#d65f5f', '#5fba7d']
         )
@@ -634,4 +657,17 @@ if file is not None:
         # Convert to HTML and display as one table
         full_html = styled_df.to_html()
         with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
-            st.markdown(full_html, unsafe_allow_html=True)
+            col21, col22 = st.columns((0.6,0.4))
+            with col21:
+                st.markdown(full_html, unsafe_allow_html=True)
+            with col22:
+                st.write("""
+                    :green[**Threshold graphs are based on the following criteria**]
+                    - :orange[**Weight Significance:** Percentages of each group attribute calculated to indicate their significance as weight.]
+                    - :orange[**Distributed Percentages:** Percentages distributed across attributes among the groups.]
+                    - :orange[**Relative Percentage:** Represents each attribute's significance relative to the entire sample data.]
+                    - :orange[**Threshold Value:** Derived from the distribution using mean and standard deviation.]
+                    - :orange[**Positive Difference Selection:** Attributes with positive differences between actual and threshold values are selected.]
+                    - :orange[**Sorting:** Attributes sorted in descending order of the threshold value, visualized from :green[green] to :red[red.]]
+
+                         """)
