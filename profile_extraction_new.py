@@ -214,9 +214,12 @@ def remove_empty_elements_from_string(lst_str):
         return lst_str
 #------------------------------------------------------ End of Functions --------------------------------------------------
         
-file = st.sidebar.file_uploader('Choose a File')
-if file is not None:
-    data = pd.read_csv(file, encoding = 'latin1' )
+# file = st.sidebar.file_uploader('Choose a File')
+# if file is not None:
+if 1 != 2 :
+    data = pd.read_csv("J5653 Bay and Dilworth Data V3 20241031.csv", sep=",", encoding='latin1')
+
+    # data = pd.read_csv(file, encoding = 'latin1' )
     dilworth = data
 
     #-------------------------------------------------------------------------------------------------------------------------
