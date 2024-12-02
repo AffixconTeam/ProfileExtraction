@@ -702,8 +702,9 @@ if file is not None:
                     new_profiles_selected.loc[idx, col] = sort_property_value_ranges(new_profiles_selected.loc[idx, col])
     new_profiles_selected = new_profiles_selected.rename(cols_rename_new)
     # st.write(new_profiles_selected)
-    for idx in addition_features:
-        new_profiles_selected.loc[idx] = new_profiles_selected.loc[idx].apply(lambda x: x.replace(f"{idx}_", "") if f"{idx}_" in x else x)
+    if is_toggled:
+        for idx in addition_features:
+            new_profiles_selected.loc[idx] = new_profiles_selected.loc[idx].apply(lambda x: x.replace(f"{idx}_", "") if f"{idx}_" in x else x)
     st.dataframe(new_profiles_selected, width=1500)
     st.markdown(
         "<h4 style='text-align: center; color: green;'>Grouped Detailed Breakdowns:</h4>",
