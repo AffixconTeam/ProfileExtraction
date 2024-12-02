@@ -17,6 +17,9 @@ from sklearn.cluster import KMeans
 import seaborn as sns
 import matplotlib.pyplot as plt
 import ast 
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import StandardScaler
+
 
 
 st.set_page_config(layout='wide')
@@ -120,7 +123,8 @@ def preprocss(df):
     df['NewHomeOwner'] = df['NewHomeOwner'].replace({1.0:"HomeOwner"})
     
     df = df.dropna(subset=['IncomeRange','GenderNew','AgeRangeNew', 'ProfileType', 'DirShr_Category', 'NewHomeOwner', "PropertyValueRange",'Age','PropertyValue','Occupation','ProfileDescription'],how='all')
-    analysis_column = ['URN','GenderNew', 'IncomeRange','AgeRangeNew', 'ProfileType', 'DirShr_Category', 'NewHomeOwner', "PropertyValueRange",'Age','PropertyValue','Occupation','ProfileDescription']
+    
+    analysis_column = ['URN','GenderNew', 'IncomeRange','AgeRangeNew', 'ProfileType', 'DirShr_Category', 'NewHomeOwner', "PropertyValueRange",'Age','PropertyValue','Occupation','ProfileDescription','Suburb',	'City',	'Ward']
     # df_analysis = df.copy()
     df = df[analysis_column]
     
@@ -133,13 +137,22 @@ def preprocss(df):
     return df
 
 @st.cache_data
-def normalization(df):
+def normalization(df, cols_encode =['IncomeRange','GenderNew','AgeRangeNew', 'ProfileType', 'DirShr_Category', 'NewHomeOwner', "PropertyValueRange"]):
 
+    # st.write("cols_encode",cols_encode)
     encoded_df = preprocss(df).fillna("").copy()
-    # LE=LabelEncoder()
-    cols_encode = ['IncomeRange','GenderNew','AgeRangeNew', 'ProfileType', 'DirShr_Category', 'NewHomeOwner', "PropertyValueRange"]
-    # for i in cols_encode:
-    #     encoded_df[i]=encoded_df[[i]].apply(LE.fit_transform)
+    LE=LabelEncoder()
+    Sc = StandardScaler()
+    # cols_encode = ['IncomeRange','GenderNew','AgeRangeNew', 'ProfileType', 'DirShr_Category', 'NewHomeOwner', "PropertyValueRange"]
+    if is_toggled:
+        for i in addition_features:
+            # Label encode the column
+            encoded_df[i] = LE.fit_transform(encoded_df[i].astype(str))  # Convert to string if needed
+            
+            # Standard scale the column
+            encoded_df[i] = Sc.fit_transform(encoded_df[[i]].values).flatten()
+
+            
     income_order = {'': 9, '<20,000': 1, '>20,000': 2, '20,001 - 30,000':3, '30,001 - 50,000':4, '50,001 - 70,000':5, '70,001 - 100,000':6, '100,001 - 150,000':7, '150,001 - 200,000':8}
     age_order = {
         'Unknown':1,'1-5':2,'6-10': 3,'11-15': 4,'16-20':5,'21-25': 6,'26-30': 7,'31-35': 8,'36-40': 9,'41-45': 10,'46-50': 11,'51-55': 12,'56-60': 13,'61-65': 14,'66-70': 15,
@@ -166,15 +179,15 @@ def normalization(df):
     df_encoded = df_encoded[cols_encode]
     # #Scaling
     # scaler = StandardScaler()
-    # scaler.fit(df_encoded[cols_encode])
-    # scaled_df = pd.DataFrame(scaler.transform(df_encoded[cols_encode]),columns= df_encoded[cols_encode].columns )
-    # print("All features are now scaled")
+    # scaler.fit(df_encoded)
+    # df_encoded = pd.DataFrame(scaler.transform(df_encoded[cols_encode]),columns= df_encoded[cols_encode].columns )
+    # # print("All features are now scaled")
     
     return df_encoded
 
 @st.cache_data
 def Dimensional_Reduction(df):
-    scaled_df = normalization(df)
+    # scaled_df = normalization(df,cols_encode=cols_encode)
     pca = PCA(n_components=3)
     pca.fit(scaled_df)
     PCA_df = pd.DataFrame(pca.transform(scaled_df), columns=(["col1","col2", "col3"]))
@@ -194,7 +207,9 @@ def Threshold(column):
 def remove_empty_elements_from_string(lst_str):
     try:
         lst = ast.literal_eval(lst_str)
-        return str([item for item in lst if not item.startswith("empty_")])
+        # return str([item for item in lst if not item.startswith("empty_")])
+        return str([item for item in lst if not "empty_" in item])
+
     except (ValueError, SyntaxError):
         return lst_str
 #------------------------------------------------------ End of Functions --------------------------------------------------
@@ -204,19 +219,54 @@ if file is not None:
     data = pd.read_csv(file, encoding = 'latin1' )
     dilworth = data
 
-    scaled_df = normalization(dilworth)
-    PCA_df = Dimensional_Reduction(dilworth)
-    # st.write(PCA_df.head())
+    #-------------------------------------------------------------------------------------------------------------------------
+    is_toggled = st.sidebar.checkbox("Geo features Analysis", value=False)
+
+    if is_toggled:
+        addition_features = st.sidebar.multiselect("Select Geo Featues to Analyze:",['City',"Suburb",'Ward'], default=['City'])
+        cols_encode = ['IncomeRange','GenderNew','AgeRangeNew', 'ProfileType', 'DirShr_Category', 'NewHomeOwner', "PropertyValueRange"] + (addition_features)
+    else:
+        cols_encode = ['IncomeRange','GenderNew','AgeRangeNew', 'ProfileType', 'DirShr_Category', 'NewHomeOwner', "PropertyValueRange"]
+    #-------------------------------------------------------------------------------------------------------------------------
+
+    scaled_df = normalization(dilworth,cols_encode=cols_encode)
+    PCA_df = Dimensional_Reduction(scaled_df)
+    # st.write(scaled_df)
+    
+    from matplotlib import colors
+    cmap = colors.ListedColormap(["#682F2F", "#9E726F", "#D6B2B1", "#B9C0C9", "#9F8A78", "#F3AB60"])
+    corrmat= scaled_df.corr()
+    # plt.figure(figsize=(20, 20))
+    # heatmap = sns.heatmap(corrmat, annot=True, cmap=cmap, center=0)
+
+    # # Ensure proper handling with Streamlit
+    # st.sidebar.pyplot(plt)
     
     Elbow_M = KElbowVisualizer(KMeans(random_state=42), k=10)
-    Elbow_M.fit(Dimensional_Reduction(dilworth))
+    Elbow_M.fit(Dimensional_Reduction(scaled_df))
     Elbow_M.ax.set_title("Elbow Method for Optimal Groups")
     Elbow_M.ax.set_xlabel("No of Groups")
-    col1,col2,col3 = st.columns((3))
+    col11,col1,col2,col3 = st.columns((4))
+
+    with col11:
+        with st.expander(":red[Show Feature Correlations]"):
+            fig1 = plt.figure(figsize=(10, 10))
+            
+            # Create the heatmap with larger annotation text
+            sns.heatmap(corrmat, annot=True, cmap=cmap, center=0,
+                        annot_kws={"size": 15})  # Set annotation font size
+            
+            # Adjust the size of the axis labels
+            plt.xticks(fontsize=30)  # X-axis label font size
+            plt.yticks(fontsize=30)  # Y-axis label font size
+            
+            # Show the plot
+            st.pyplot(fig1)
     with col1:
         with st.expander(":red[Show Optimal Group Selection]"):
-            st.pyplot(Elbow_M.ax.figure)
-    
+            fig2 = Elbow_M.ax.figure
+            st.pyplot(fig2)
+        
     inertia_list = []
     cluster_range = range(2, 10)  
 
@@ -258,6 +308,9 @@ if file is not None:
         color='Clusters', 
         # title="All Groups as clusters"
     )
+    fig.update_layout(
+    coloraxis_colorbar_title="Groups" 
+    )   
 
     with col2:
         with st.expander(":red[Show 3d Group Separation]"):
@@ -281,7 +334,10 @@ if file is not None:
 
 
     # ----------------------- Sample Breakdown ---------------------------------------
-    cols_del = ['ProfileType','IncomeRange', 'DirShr_Category', 'NewHomeOwner', 'GenderNew', 'AgeRangeNew', 'PropertyValueRange']
+    if is_toggled:
+        cols_del = ['ProfileType','IncomeRange', 'DirShr_Category', 'NewHomeOwner', 'GenderNew', 'AgeRangeNew', 'PropertyValueRange'] + addition_features
+    else:
+        cols_del = ['ProfileType','IncomeRange', 'DirShr_Category', 'NewHomeOwner', 'GenderNew', 'AgeRangeNew', 'PropertyValueRange']
     dfs = []
     for col in cols_del:
         count_df = pd.DataFrame(dilworth_preprocessed[col].value_counts())
@@ -290,12 +346,16 @@ if file is not None:
         combined_df['Category'] = col
         combined_df.columns = ['Count', 'Percentage','Category']
         combined_df.index = combined_df.index.map(lambda x: f"empty_{col}" if x == "" else x)
+        if is_toggled and len(addition_features) > 1:
+            if col in ['Suburb', 'Ward', 'City']:
+                combined_df.index = combined_df.index.map(lambda x: f"{col}_{x}")
+
         dfs.append(combined_df)
 
     final_df = pd.concat(dfs, axis=0)
     final_df.columns = ['Sample_Count', 'Sample_Percentage','Category']
 
-    # st.write(final_df)
+    # st.write(final_df.index[final_df.index.duplicated()])
     # ----------------------- Sample with all groups count Breakdown ---------------------------------------
     dfs_all = []
     for cluster in sorted(dilworth_preprocessed.Clusters.unique().tolist()):
@@ -306,6 +366,9 @@ if file is not None:
             count_df = pd.DataFrame(profile_df[col].value_counts())
             count_df.columns = [f'Group_{cluster}_Count']
             count_df.index = count_df.index.map(lambda x: f"empty_{col}" if x == "" else x)
+            if is_toggled and len(addition_features) > 1:
+                if col in ['Suburb', 'Ward', 'City']:
+                    count_df.index = count_df.index.map(lambda x: f"{col}_{x}")
             dfs.append(count_df)
         profile_df_values = pd.concat(dfs, axis=0)
         profile_df_values = profile_df_values.reindex(final_df.index, fill_value=0)
@@ -401,8 +464,10 @@ if file is not None:
 
     for i in range(1, optimal_clusters + 1):
         ranges = profiles_selected.loc['AgeRangeNew', f'Group_{i}']
+        ranges = ", ".join([r for r in ranges.split(", ") if r != 'Over 95'])
         
         if ranges != "": 
+
             value_ranges = ranges.split(', ')
             values = [int(r.split('-')[0]) for r in value_ranges]
             lowest_value = min(values)
@@ -450,70 +515,82 @@ if file is not None:
                 elif idx == 'PropertyValueRange':
                     profiles_selected.loc[idx, col] = sort_property_value_ranges(profiles_selected.loc[idx, col])
     cols_rename_new = {'ProfileType':'Contact Plus Profiles','IncomeRange':'Income', 'DirShr_Category':'Company Office', 'NewHomeOwner':'HomeOwner', 'GenderNew':'Gender', 'AgeRangeNew':'AgeRange', 'PropertyValueRange':'PropertyValue'}   
-    st.dataframe(profiles_selected.rename(cols_rename_new),width=1700)
+    # if "ProfileType" in profiles_selected.index:
+    #     cols_to_drop = profiles_selected.columns[profiles_selected.loc["ProfileType"] == ""]
+    #     profiles_selected.drop(columns=cols_to_drop, inplace=True
 
-    st.markdown(
-        "<h4 style='text-align: center; color: green;'>Grouped Detailed Breakdowns:</h4>",
-        unsafe_allow_html=True
-    )
-    # test2 = breakdowns_all[['Category'] + [f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]]
-    # test2_df = test2[test2['Category'] == 'ProfileType']
-    # st.write(test2[test2['Category'] == 'ProfileType'])
-    # st.write(test2_df[test2_df.drop(columns='Category',axis=1)>profile_thresold])
-    test2 = breakdowns_all[['Category']+[f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]]
-    groups = [f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]
-    for group in groups:
-        group_data = []  # Collect DataFrames for each group
 
-        for col in cols_del:
-            # Filter and compute threshold
-            demog = test2[test2['Category'] == col][[group]].copy()
-            demog['Threshold Value'] = np.where(
-                col != "IncomeRange",
-                demog[group] - Threshold('ProfileType'),
-                demog[group] - Threshold('IncomeRange'))
-            demog = demog.sort_values(by=group, ascending=False)
-            demog = demog[~demog.index.str.startswith("empty_")]
-            demog['Category'] = col  # Add category column for clarity
-            group_data.append(demog)
+# ----------------------commented block   ----------------------------------------------
 
-        # Concatenate all DataFrames for the group
-        concatenated_df = pd.concat(group_data, axis=0)
+    # st.dataframe(profiles_selected.rename(cols_rename_new),width=1700)
 
-        # Apply styling to the concatenated DataFrame
-        styled_df = concatenated_df.style.bar(
-            subset=['Threshold Value'],  
-            align='mid',
-            color=['#d65f5f', '#5fba7d']
-        )
+    # st.markdown(
+    #     "<h4 style='text-align: center; color: green;'>Grouped Detailed Breakdowns:</h4>",
+    #     unsafe_allow_html=True
+    # )
+    # # test2 = breakdowns_all[['Category'] + [f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]]
+    # # test2_df = test2[test2['Category'] == 'ProfileType']
+    # # st.write(test2[test2['Category'] == 'ProfileType'])
+    # # st.write(test2_df[test2_df.drop(columns='Category',axis=1)>profile_thresold])
+    # test2 = breakdowns_all[['Category']+[f'Group_{i}_Relative_Percentage' for i in range(1,optimal_clusters+1)]]
+    # groups = [f'Group_{i}_Relative_Percentage' for i in range(1, optimal_clusters+1)]
+    # for group in groups:
+    #     group_data = []  # Collect DataFrames for each group
 
-        # Convert to HTML and display as one table
-        full_html = styled_df.to_html()
-        with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
-            col11, col12 = st.columns((0.6,0.4))
-            with col11:
-                st.markdown(full_html, unsafe_allow_html=True)
-            with col12:
-                st.write("""
-                    :green[**Threshold graphs are based on the following criteria**]
-                    - :orange[**Weight Significance:** Percentages of each group attribute calculated to indicate their significance as weight.]
-                    - :orange[**Distributed Percentages:** Percentages distributed across attributes among the groups.]
-                    - :orange[**Relative Percentage:** Represents each attribute's significance relative to the entire sample data.]
-                    - :orange[**Threshold Value:** Derived from the distribution using mean and standard deviation.]
-                    - :orange[**Positive Difference Selection:** Attributes with positive differences between actual and threshold values are selected.]
-                    - :orange[**Sorting:** Attributes sorted in descending order of the threshold value, visualized from :green[green] to :red[red.]]
+    #     for col in cols_del:
+    #         # Filter and compute threshold
+    #         demog = test2[test2['Category'] == col][[group]].copy()
+    #         demog['Threshold Value'] = np.where(
+    #             col != "IncomeRange",
+    #             demog[group] - Threshold('ProfileType'),
+    #             demog[group] - Threshold('IncomeRange'))
+    #         demog = demog.sort_values(by=group, ascending=False)
+    #         demog = demog[~demog.index.str.startswith("empty_")]
+    #         demog['Category'] = col  # Add category column for clarity
+    #         group_data.append(demog)
 
-                         """)
+    #     # Concatenate all DataFrames for the group
+    #     concatenated_df = pd.concat(group_data, axis=0)
+
+    #     # Apply styling to the concatenated DataFrame
+    #     styled_df = concatenated_df.style.bar(
+    #         subset=['Threshold Value'],  
+    #         align='mid',
+    #         color=['#d65f5f', '#5fba7d']
+    #     )
+
+    #     # Convert to HTML and display as one table
+    #     full_html = styled_df.to_html()
+    #     with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
+    #         col11, col12 = st.columns((0.6,0.4))
+    #         with col11:
+    #             st.markdown(full_html, unsafe_allow_html=True)
+    #         with col12:
+    #             st.write("""
+    #                 :green[**Threshold graphs are based on the following criteria**]
+    #                 - :orange[**Weight Significance:** Percentages of each group attribute calculated to indicate their significance as weight.]
+    #                 - :orange[**Distributed Percentages:** Percentages distributed across attributes among the groups.]
+    #                 - :orange[**Relative Percentage:** Represents each attribute's significance relative to the entire sample data.]
+    #                 - :orange[**Threshold Value:** Derived from the distribution using mean and standard deviation.]
+    #                 - :orange[**Positive Difference Selection:** Attributes with positive differences between actual and threshold values are selected.]
+    #                 - :orange[**Sorting:** Attributes sorted in descending order of the threshold value, visualized from :green[green] to :red[red.]]
+
+    #                      """)
 
 
 
 
     #------------------------------------------------------------Profile Selection ----------------------------
-    # for col in breakdowns_all.columns:
-    groups = sorted(st.multiselect("Select Groups", profiles_selected.columns, default=profiles_selected.columns))
-    selected_columns = ['Sample_Count', 'Sample_Percentage','Category'] + [col for col in breakdowns_all.columns if any(group in col for group in groups)]
+    ## for col in breakdowns_all.columns:
+    # groups = sorted(st.multiselect("Select Groups", profiles_selected.columns, default=profiles_selected.columns))
+    # selected_columns = ['Sample_Count', 'Sample_Percentage','Category'] + [col for col in breakdowns_all.columns if any(group in col for group in groups)]
+    if "ProfileType" in profiles_selected.index:
+        groups = profiles_selected.columns[profiles_selected.loc["ProfileType"] != ""]
+        selected_columns = ['Sample_Count', 'Sample_Percentage','Category'] + [col for col in breakdowns_all.columns if any(group in col for group in groups)]
+
 
     breakdowns_all = breakdowns_all[selected_columns]
+
     # st.dataframe(breakdowns_all,width=1500)
     # st.write(breakdowns_all.columns.tolist())
     # groups_rename = [f'Group_{i+1}' for i in range(len(selected_columns))]
@@ -523,6 +600,7 @@ if file is not None:
     # for idx, new_col in zip(selected_column_indices, new_column_names):
     #     breakdowns_all.columns.values[idx] = new_col
 
+    
 
     #--------------------------------------------------------------------------------------------------------------------
     #--------------------------------------------------------------------------------------------------------------------
@@ -589,6 +667,8 @@ if file is not None:
 
     for i in range(1, len(groups)+1):
         ranges = new_profiles_selected.loc['AgeRangeNew', f'Group_{i}']
+        ranges = ", ".join([r for r in ranges.split(", ") if r != 'Over 95'])
+
         
         if ranges != "": 
             value_ranges = ranges.split(', ')
@@ -620,15 +700,22 @@ if file is not None:
                     new_profiles_selected.loc[idx, col] = sort_income_ranges(new_profiles_selected.loc[idx, col])
                 elif idx == 'PropertyValueRange':
                     new_profiles_selected.loc[idx, col] = sort_property_value_ranges(new_profiles_selected.loc[idx, col])
-
-    st.dataframe(new_profiles_selected.rename(cols_rename_new),width=1500)
+    new_profiles_selected = new_profiles_selected.rename(cols_rename_new)
+    # st.write(new_profiles_selected)
+    for idx in addition_features:
+        new_profiles_selected.loc[idx] = new_profiles_selected.loc[idx].apply(lambda x: x.replace(f"{idx}_", "") if f"{idx}_" in x else x)
+    st.dataframe(new_profiles_selected, width=1500)
     st.markdown(
         "<h4 style='text-align: center; color: green;'>Grouped Detailed Breakdowns:</h4>",
         unsafe_allow_html=True
     )
-
-    test2 = breakdowns_all[['Category']+[f'Group_{i}_Relative_Percentage' for i in range(1,len(groups)+1)]]
+    # st.write(breakdowns_all.filter(like='_Relative_Percentage').columns)
+    test2 = breakdowns_all[['Category'] + list(breakdowns_all.filter(like='_Relative_Percentage').columns)]
     groups = [f'Group_{i}_Relative_Percentage' for i in range(1,len(groups)+1)]
+    test2.columns = ['Category'] + groups
+
+    # st.write(test2.columns)
+
     for group in groups:
         group_data = []  # Collect DataFrames for each group
 
@@ -641,11 +728,24 @@ if file is not None:
                 demog[group] - Threshold('IncomeRange'))
             demog = demog.sort_values(by=group, ascending=False)
             demog = demog[~demog.index.str.startswith("empty_")]
+            # demog = demog[~demog.index.to_series().str.contains("empty_")]
             demog['Category'] = col  # Add category column for clarity
+            demog.columns = ['Relative Percentage', 'Threshold Value', 'Category']
+            demog = demog[['Category','Relative Percentage','Threshold Value']]
             group_data.append(demog)
 
         # Concatenate all DataFrames for the group
         concatenated_df = pd.concat(group_data, axis=0)
+        concatenated_df.index = concatenated_df.index.map(
+            lambda idx: idx.replace(f"{concatenated_df.loc[idx, 'Category']}_", "")
+            if concatenated_df.loc[idx, "Category"] in idx else idx
+        )
+
+
+        concatenated_df.reset_index(inplace=True)
+        concatenated_df.rename(columns={"index": "Feature"}, inplace=True)
+        concatenated_df['Category'] = concatenated_df['Category'].replace(cols_rename_new)
+        # st.write(concatenated_df)
 
         # Apply styling to the concatenated DataFrame
         styled_df = concatenated_df.style.bar(
@@ -663,11 +763,7 @@ if file is not None:
             with col22:
                 st.write("""
                     :green[**Threshold graphs are based on the following criteria**]
-                    - :orange[**Weight Significance:** Percentages of each group attribute calculated to indicate their significance as weight.]
-                    - :orange[**Distributed Percentages:** Percentages distributed across attributes among the groups.]
                     - :orange[**Relative Percentage:** Represents each attribute's significance relative to the entire sample data.]
                     - :orange[**Threshold Value:** Derived from the distribution using mean and standard deviation.]
-                    - :orange[**Positive Difference Selection:** Attributes with positive differences between actual and threshold values are selected.]
-                    - :orange[**Sorting:** Attributes sorted in descending order of the threshold value, visualized from :green[green] to :red[red.]]
-
                          """)
+
