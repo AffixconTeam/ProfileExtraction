@@ -735,6 +735,17 @@ if 1 != 3 :
         "<h4 style='text-align: center; color: green;'>Multivariate Profiles Leading Characteristics:</h4>",
         unsafe_allow_html=True
     )
+    profiles_With_description = pd.read_csv("J5653 Bay and Dilworth Data V3 20241127.csv", sep=",", encoding='latin1',usecols=['ProfileType','ProfileDescription'])
+    profiles_With_description['Profile_with_description'] = profiles_With_description['ProfileType']+ " - "+ profiles_With_description['ProfileDescription']
+    profiles_With_description_list = profiles_With_description['Profile_with_description'].dropna().drop_duplicates().tolist()
+    # profile_dict = {desc.split(' - ')[0]: desc for desc in profiles_With_description_list}
+
+    # def replace_profiles(cell_value):
+    #     # Split the string into codes, map to descriptions, and rejoin
+    #     return ", ".join(profile_dict.get(code.strip(), code.strip()) for code in cell_value.split(", "))
+
+    # # Apply the replacement only to the "Contact Plus Profiles" row
+    # new_profiles_selected.loc["Contact Plus Profiles"] = new_profiles_selected.loc["Contact Plus Profiles"].apply(replace_profiles)
     st.dataframe(new_profiles_selected.reindex(new_index_order), width=2000)
     st.markdown(
         "<h4 style='text-align: center; color: green;'>Grouped Detailed Breakdowns:</h4>",
@@ -747,8 +758,9 @@ if 1 != 3 :
 
     # st.write(test2.columns)
 
+    # st.write(profiles_With_description_list)
     for group in groups:
-        group_data = []  # Collect DataFrames for each group
+        # group_data = []  # Collect DataFrames for each group
 
         with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
             st.markdown("""
@@ -774,7 +786,10 @@ if 1 != 3 :
                 # demog['Category'] = col  # Add category column for clarity
                 demog.columns = ['Relative Percentage', 'Threshold Value']
                 demog = demog[['Relative Percentage','Threshold Value']]
-                group_data.append(demog)
+                if col == 'ProfileType':
+                    profile_dict = {desc.split(' - ')[0]: desc for desc in profiles_With_description_list}
+                    demog.index = demog.index.map(lambda idx: profile_dict.get(idx, idx))
+                # group_data.append(demog)
                 styled_df = demog.style.bar(
                     subset=['Threshold Value'],  
                     align='mid',
