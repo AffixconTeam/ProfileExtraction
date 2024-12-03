@@ -24,7 +24,8 @@ from sklearn.preprocessing import StandardScaler
 
 st.set_page_config(layout='wide')
 # st.title(':red[DataZoo Profile Extraction]')
-st.markdown("<h1 style='text-align: center; color: blue;'>DataZoo Profile Extraction</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: blue;'>Lookalike Profile Extraction</h1>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: green;'>Contact Plus lookalike Audience Count:</h4>", unsafe_allow_html=True)
 
 
 #---------------------------------------------Functions --------------------------------------------------------------------
@@ -216,6 +217,19 @@ def remove_empty_elements_from_string(lst_str):
         
 # file = st.sidebar.file_uploader('Choose a File')
 # if file is not None:
+datazoo_profile_count = {
+    "Profile": ['Group_1', 'Group_2', 'Group_3', 'Group_4'],
+    "Mailing": ['12345', '375', '4213', '5431'],
+    "Tele Marketing": ['8789', '230', '3214', '4581'],
+    "Mobile": ['422', '23', '74', '303'],
+    "Phone": ['8074', '189', '3083', '4033'],
+    "Email": ['293', '18', '57', '245'],
+}
+
+datazoo_profile_df = pd.DataFrame(datazoo_profile_count)
+datazoo_profile_df.set_index('Profile', inplace=True)
+st.dataframe(datazoo_profile_df, width=2000)
+
 if 1 != 3 :
     data = pd.read_csv("J5653 Bay and Dilworth Data V3 20241127.csv", sep=",", encoding='latin1')
 
@@ -247,28 +261,28 @@ if 1 != 3 :
     
     Elbow_M = KElbowVisualizer(KMeans(random_state=42), k=10)
     Elbow_M.fit(Dimensional_Reduction(scaled_df))
-    Elbow_M.ax.set_title("Elbow Method for Optimal Groups")
+    Elbow_M.ax.set_title("Affix Method for Optimal Groups")
     Elbow_M.ax.set_xlabel("No of Groups")
-    col11,col1,col2,col3 = st.columns((4))
+    # col1,col2,col3 = st.columns((3))
 
-    with col11:
-        with st.expander(":red[Show Feature Correlations]"):
-            fig1 = plt.figure(figsize=(10, 10))
+    # with col11:
+    #     with st.expander(":red[Show Feature Correlations]"):
+    #         fig1 = plt.figure(figsize=(10, 10))
             
-            # Create the heatmap with larger annotation text
-            sns.heatmap(corrmat, annot=True, cmap=cmap, center=0,
-                        annot_kws={"size": 15})  # Set annotation font size
+    #         # Create the heatmap with larger annotation text
+    #         sns.heatmap(corrmat, annot=True, cmap=cmap, center=0,
+    #                     annot_kws={"size": 15})  # Set annotation font size
             
-            # Adjust the size of the axis labels
-            plt.xticks(fontsize=30)  # X-axis label font size
-            plt.yticks(fontsize=30)  # Y-axis label font size
+    #         # Adjust the size of the axis labels
+    #         plt.xticks(fontsize=30)  # X-axis label font size
+    #         plt.yticks(fontsize=30)  # Y-axis label font size
             
-            # Show the plot
-            st.pyplot(fig1)
-    with col1:
-        with st.expander(":red[Show Optimal Group Selection]"):
-            fig2 = Elbow_M.ax.figure
-            st.pyplot(fig2)
+    #         # Show the plot
+    #         st.pyplot(fig1)
+    # with col1:
+    #     with st.expander(":red[Show Optimal Group Selection]"):
+    #         fig2 = Elbow_M.ax.figure
+    #         st.pyplot(fig2)
         
     inertia_list = []
     cluster_range = range(2, 10)  
@@ -315,25 +329,25 @@ if 1 != 3 :
     coloraxis_colorbar_title="Groups" 
     )   
 
-    with col2:
-        with st.expander(":red[Show 3d Group Separation]"):
-            st.plotly_chart(fig)
+    # with col2:
+    #     with st.expander(":red[Show 3d Group Separation]"):
+    #         st.plotly_chart(fig)
 
-    with col3:
-        pal = ["#682F2F", "#B9C0C9", "#9F8A78", "#F3AB60"]
-        fig, ax = plt.subplots(figsize=(8, 6))
-        pl = sns.countplot(x=dilworth_preprocessed["Clusters"], palette=pal, ax=ax)
-        ax.set_xlabel('Groups')
-        # pl.set_title("Distribution Of The Clusters")
-        total = len(dilworth_preprocessed["Clusters"])
-        for patch in ax.patches:
-            height = patch.get_height()
-            percentage = f"{(height / total) * 100:.1f}%"
-            ax.annotate(percentage, (patch.get_x() + patch.get_width() / 2, height),
-                        ha="center", va="bottom", fontsize=10)
+    # with col3:
+    #     pal = ["#682F2F", "#B9C0C9", "#9F8A78", "#F3AB60"]
+    #     fig, ax = plt.subplots(figsize=(8, 6))
+    #     pl = sns.countplot(x=dilworth_preprocessed["Clusters"], palette=pal, ax=ax)
+    #     ax.set_xlabel('Groups')
+    #     # pl.set_title("Distribution Of The Clusters")
+    #     total = len(dilworth_preprocessed["Clusters"])
+    #     for patch in ax.patches:
+    #         height = patch.get_height()
+    #         percentage = f"{(height / total) * 100:.1f}%"
+    #         ax.annotate(percentage, (patch.get_x() + patch.get_width() / 2, height),
+    #                     ha="center", va="bottom", fontsize=10)
 
-        with st.expander(":red[Show Distribution of Groups]"):
-            st.pyplot(fig)
+    #     with st.expander(":red[Show Distribution of Groups]"):
+    #         st.pyplot(fig)
 
 
     # ----------------------- Sample Breakdown ---------------------------------------
@@ -517,7 +531,10 @@ if 1 != 3 :
                     profiles_selected.loc[idx, col] = sort_income_ranges(profiles_selected.loc[idx, col])
                 elif idx == 'PropertyValueRange':
                     profiles_selected.loc[idx, col] = sort_property_value_ranges(profiles_selected.loc[idx, col])
-    cols_rename_new = {'ProfileType':'Contact Plus Profiles','IncomeRange':'Income', 'DirShr_Category':'Company Office', 'NewHomeOwner':'HomeOwner', 'GenderNew':'Gender', 'AgeRangeNew':'AgeRange', 'PropertyValueRange':'PropertyValue'}   
+    cols_rename_new = {'ProfileType':'Contact Plus Profiles','IncomeRange':'Income', 'DirShr_Category':'Company Office', 'NewHomeOwner':'HomeOwner', 'GenderNew':'Gender', 'AgeRangeNew':'Age', 'PropertyValueRange':'PropertyValue'}   
+    if is_toggled:
+        for feature in addition_features:
+            cols_rename_new[feature] = feature  # You can customize the value as needed
     # if "ProfileType" in profiles_selected.index:
     #     cols_to_drop = profiles_selected.columns[profiles_selected.loc["ProfileType"] == ""]
     #     profiles_selected.drop(columns=cols_to_drop, inplace=True
@@ -708,7 +725,17 @@ if 1 != 3 :
     if is_toggled:
         for idx in addition_features:
             new_profiles_selected.loc[idx] = new_profiles_selected.loc[idx].apply(lambda x: x.replace(f"{idx}_", "") if f"{idx}_" in x else x)
-    st.dataframe(new_profiles_selected, width=1500)
+    # cols_rename_new = {'ProfileType':'Contact Plus Profiles','IncomeRange':'Income', 'DirShr_Category':'Company Office', 'NewHomeOwner':'HomeOwner', 'GenderNew':'Gender', 'AgeRangeNew':'Age', 'PropertyValueRange':'PropertyValue'}   
+    if is_toggled:
+        new_index_order = ['Contact Plus Profiles','Age','Gender','Income','HomeOwner','Company Office','PropertyValue'] + addition_features + ['Group_percentage']
+    else:
+        new_index_order = ['Contact Plus Profiles','Age','Gender','Income','HomeOwner','PropertyValue','Group_percentage']
+
+    st.markdown(
+        "<h4 style='text-align: center; color: green;'>Multivariate Profiles Leading Characteristics:</h4>",
+        unsafe_allow_html=True
+    )
+    st.dataframe(new_profiles_selected.reindex(new_index_order), width=2000)
     st.markdown(
         "<h4 style='text-align: center; color: green;'>Grouped Detailed Breakdowns:</h4>",
         unsafe_allow_html=True
@@ -723,51 +750,102 @@ if 1 != 3 :
     for group in groups:
         group_data = []  # Collect DataFrames for each group
 
-        for col in cols_del:
-            # Filter and compute threshold
-            demog = test2[test2['Category'] == col][[group]].copy()
-            demog['Threshold Value'] = np.where(
-                col != "IncomeRange",
-                demog[group] - Threshold('ProfileType'),
-                demog[group] - Threshold('IncomeRange'))
-            demog = demog.sort_values(by=group, ascending=False)
-            demog = demog[~demog.index.str.startswith("empty_")]
-            # demog = demog[~demog.index.to_series().str.contains("empty_")]
-            demog['Category'] = col  # Add category column for clarity
-            demog.columns = ['Relative Percentage', 'Threshold Value', 'Category']
-            demog = demog[['Category','Relative Percentage','Threshold Value']]
-            group_data.append(demog)
+        with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
+            st.markdown("""
+                <div style="text-align: center;">
+                    <p style="color: green;"><strong>Threshold graphs are based on the following criteria</strong></p>
+                    <ul style="list-style-type: none; padding-left: 0;">
+                        <li style="color: orange;"><strong>Relative Percentage:</strong> Represents each attribute's significance relative to the entire sample data.</li>
+                        <li style="color: orange;"><strong>Threshold Value:</strong> Derived from the distribution using mean and standard deviation.</li>
+                    </ul>
+                </div>
+            """, unsafe_allow_html=True)
+            cols = st.columns((3))
+            for i,col in enumerate(cols_del):
+                # Filter and compute threshold
+                demog = test2[test2['Category'] == col][[group]].copy()
+                demog['Threshold Value'] = np.where(
+                    col != "IncomeRange",
+                    demog[group] - Threshold('ProfileType'),
+                    demog[group] - Threshold('IncomeRange'))
+                demog = demog.sort_values(by=group, ascending=False)
+                demog = demog[~demog.index.str.startswith("empty_")]
+                # demog = demog[~demog.index.to_series().str.contains("empty_")]
+                # demog['Category'] = col  # Add category column for clarity
+                demog.columns = ['Relative Percentage', 'Threshold Value']
+                demog = demog[['Relative Percentage','Threshold Value']]
+                group_data.append(demog)
+                styled_df = demog.style.bar(
+                    subset=['Threshold Value'],  
+                    align='mid',
+                    color=['#d65f5f', '#5fba7d']
+                )
+
+            # Convert to HTML and display as one table
+                full_html = styled_df.to_html()
+                column_index = i % 3  # This ensures the table will be displayed in one of the 3 columns
+                with cols[column_index]:  # Select the column based on the index
+                    st.write(f":red[**{cols_rename_new[col]} Analysis**]")
+                    st.markdown(f"<div>{full_html}</div>", unsafe_allow_html=True)
+
+
 
         # Concatenate all DataFrames for the group
-        concatenated_df = pd.concat(group_data, axis=0)
-        concatenated_df.index = concatenated_df.index.map(
-            lambda idx: idx.replace(f"{concatenated_df.loc[idx, 'Category']}_", "")
-            if concatenated_df.loc[idx, "Category"] in idx else idx
-        )
+        # concatenated_df = pd.concat(group_data, axis=0)
+        # concatenated_df.index = concatenated_df.index.map(
+        #     lambda idx: idx.replace(f"{concatenated_df.loc[idx, 'Category']}_", "")
+        #     if concatenated_df.loc[idx, "Category"] in idx else idx
+        # )
 
 
-        concatenated_df.reset_index(inplace=True)
-        concatenated_df.rename(columns={"index": "Feature"}, inplace=True)
-        concatenated_df['Category'] = concatenated_df['Category'].replace(cols_rename_new)
+        # concatenated_df.reset_index(inplace=True)
+        # concatenated_df.rename(columns={"index": "Feature"}, inplace=True)
+        # concatenated_df['Category'] = concatenated_df['Category'].replace(cols_rename_new)
         # st.write(concatenated_df)
 
         # Apply styling to the concatenated DataFrame
-        styled_df = concatenated_df.style.bar(
-            subset=['Threshold Value'],  
-            align='mid',
-            color=['#d65f5f', '#5fba7d']
-        )
+        # styled_df = concatenated_df.style.bar(
+        #     subset=['Threshold Value'],  
+        #     align='mid',
+        #     color=['#d65f5f', '#5fba7d']
+        # )
 
-        # Convert to HTML and display as one table
-        full_html = styled_df.to_html()
-        with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
-            col21, col22 = st.columns((0.6,0.4))
-            with col21:
-                st.markdown(full_html, unsafe_allow_html=True)
-            with col22:
-                st.write("""
-                    :green[**Threshold graphs are based on the following criteria**]
-                    - :orange[**Relative Percentage:** Represents each attribute's significance relative to the entire sample data.]
-                    - :orange[**Threshold Value:** Derived from the distribution using mean and standard deviation.]
-                         """)
+        # # Convert to HTML and display as one table
+        # full_html = styled_df.to_html()
+        # with st.expander(f":red[**View {' '.join(group.split('_')[:2])}**]"):
+        #     col21, col22 = st.columns((0.6,0.4))
+        #     with col21:
+        #         st.markdown(full_html, unsafe_allow_html=True)
+        #     with col22:
+                # st.write("""
+                #     :green[**Threshold graphs are based on the following criteria**]
+                #     - :orange[**Relative Percentage:** Represents each attribute's significance relative to the entire sample data.]
+                #     - :orange[**Threshold Value:** Derived from the distribution using mean and standard deviation.]
+                #          """)
+    
+    st.markdown("<h4 style='text-align: center; color: green;'>Appendixes</h4>", unsafe_allow_html=True)
 
+    col1,col2,col3 = st.columns((3))
+
+    with col1:
+        with st.expander(":red[Show Optimal Group Selection]"):
+            fig2 = Elbow_M.ax.figure
+            st.pyplot(fig2)
+    with col2:
+        with st.expander(":red[Show 3d Group Separation]"):
+            st.plotly_chart(fig)
+    with col3:
+        pal = ["#682F2F", "#B9C0C9", "#9F8A78", "#F3AB60"]
+        fig, ax = plt.subplots(figsize=(8, 6))
+        pl = sns.countplot(x=dilworth_preprocessed["Clusters"], palette=pal, ax=ax)
+        ax.set_xlabel('Groups')
+        # pl.set_title("Distribution Of The Clusters")
+        total = len(dilworth_preprocessed["Clusters"])
+        for patch in ax.patches:
+            height = patch.get_height()
+            percentage = f"{(height / total) * 100:.1f}%"
+            ax.annotate(percentage, (patch.get_x() + patch.get_width() / 2, height),
+                        ha="center", va="bottom", fontsize=10)
+
+        with st.expander(":red[Show Distribution of Groups]"):
+            st.pyplot(fig)
