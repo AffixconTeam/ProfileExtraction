@@ -26,7 +26,7 @@ st.set_page_config(layout='wide')
 # st.title(':red[DataZoo Profile Extraction]')
 st.markdown("<h1 style='text-align: center; color: blue;'>Lookalike Profile Extraction</h1>", unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center; color: green;'>Contact Plus lookalike Audience Count:</h4>", unsafe_allow_html=True)
-
+st.markdown("<h6 style='text-align: center; color: orange;'>Below is a summary of the lookalike audience counts available for purchase, based on the current database records for each profiles.</h6>", unsafe_allow_html=True)
 
 #---------------------------------------------Functions --------------------------------------------------------------------
 def calculate_match(row, profile):
@@ -218,7 +218,7 @@ def remove_empty_elements_from_string(lst_str):
 # file = st.sidebar.file_uploader('Choose a File')
 # if file is not None:
 datazoo_profile_count = {
-    "Profile": ['Group_1', 'Group_2', 'Group_3', 'Group_4'],
+    "Profile": ['Group 1', 'Group 2', 'Group 3', 'Group 4'],
     "Mailing": ['12345', '375', '4213', '5431'],
     "Tele Marketing": ['8789', '230', '3214', '4581'],
     "Mobile": ['422', '23', '74', '303'],
@@ -237,6 +237,7 @@ if 1 != 3 :
     dilworth = data
 
     #-------------------------------------------------------------------------------------------------------------------------
+    st.sidebar.write(":green[These are the additional geo features that can analyze for profile extraction.]")
     is_toggled = st.sidebar.checkbox("Geo features Analysis", value=False)
 
     if is_toggled:
@@ -735,9 +736,15 @@ if 1 != 3 :
         "<h4 style='text-align: center; color: green;'>Multivariate Profiles Leading Characteristics:</h4>",
         unsafe_allow_html=True
     )
+    st.markdown(
+        "<h6 style='text-align: center; color: orange;'>These groups are formed based on similar characteristics and highlight the top demographics within each group, providing insights into the defining attributes that distinguish each group.</h6>",
+        unsafe_allow_html=True
+    )
+
     profiles_With_description = pd.read_csv("J5653 Bay and Dilworth Data V3 20241127.csv", sep=",", encoding='latin1',usecols=['ProfileType','ProfileDescription'])
     profiles_With_description['Profile_with_description'] = profiles_With_description['ProfileType']+ " - "+ profiles_With_description['ProfileDescription']
     profiles_With_description_list = profiles_With_description['Profile_with_description'].dropna().drop_duplicates().tolist()
+    new_profiles_selected.columns = new_profiles_selected.columns.str.replace('_', ' ')
     # profile_dict = {desc.split(' - ')[0]: desc for desc in profiles_With_description_list}
 
     # def replace_profiles(cell_value):
@@ -767,8 +774,8 @@ if 1 != 3 :
                 <div style="text-align: center;">
                     <p style="color: green;"><strong>Threshold graphs are based on the following criteria</strong></p>
                     <ul style="list-style-type: none; padding-left: 0;">
-                        <li style="color: orange;"><strong>Relative Percentage:</strong> Represents each attribute's significance relative to the entire sample data.</li>
-                        <li style="color: orange;"><strong>Threshold Value:</strong> Derived from the distribution using mean and standard deviation.</li>
+                        <li style="color: orange;"><strong>Percentage:</strong> Represents each attribute's significance to the entire sample data.</li>
+                        <li style="color: orange;"><strong>Index Value:</strong> Derived from the distribution based on statistical analysis.</li>
                     </ul>
                 </div>
             """, unsafe_allow_html=True)
@@ -784,14 +791,20 @@ if 1 != 3 :
                 demog = demog[~demog.index.str.startswith("empty_")]
                 # demog = demog[~demog.index.to_series().str.contains("empty_")]
                 # demog['Category'] = col  # Add category column for clarity
-                demog.columns = ['Relative Percentage', 'Threshold Value']
-                demog = demog[['Relative Percentage','Threshold Value']]
+                demog.columns = ['Percentage', 'Threshold Value']
+                demog.index.name = cols_rename_new[col]
+                demog = demog[['Percentage','Threshold Value']]
+                demog['Propotional Percentage'] = (100/(np.where(col != "IncomeRange",Threshold('ProfileType'),demog["Percentage"] - Threshold('IncomeRange'))))*demog["Percentage"]
+                demog['Index'] = np.ceil(demog['Propotional Percentage'] - 100).astype(int)
+                demog = demog.drop(columns=['Percentage', 'Threshold Value'],axis=1)
+                demog.columns = ['Percentage', 'Index']
+
                 if col == 'ProfileType':
                     profile_dict = {desc.split(' - ')[0]: desc for desc in profiles_With_description_list}
                     demog.index = demog.index.map(lambda idx: profile_dict.get(idx, idx))
                 # group_data.append(demog)
                 styled_df = demog.style.bar(
-                    subset=['Threshold Value'],  
+                    subset=['Index'],  
                     align='mid',
                     color=['#d65f5f', '#5fba7d']
                 )
@@ -839,28 +852,48 @@ if 1 != 3 :
                 #          """)
     
     st.markdown("<h4 style='text-align: center; color: green;'>Appendixes</h4>", unsafe_allow_html=True)
+    # st.markdown("<h6 style='text-align: center; color: orange;'>A group represents similar characteristics across selected features.</h6>", unsafe_allow_html=True)
 
-    col1,col2,col3 = st.columns((3))
+    with st.expander(":red[View all Appendixes]"):
+        col1,col2,col3 = st.columns((3))
 
-    with col1:
-        with st.expander(":red[Show Optimal Group Selection]"):
+        with col3:
+            st.write(':orange[**Optimal Group Selection:** Groups are formed by identifying shared similar characteristics within the sample data]')
             fig2 = Elbow_M.ax.figure
             st.pyplot(fig2)
-    with col2:
-        with st.expander(":red[Show 3d Group Separation]"):
-            st.plotly_chart(fig)
-    with col3:
-        pal = ["#682F2F", "#B9C0C9", "#9F8A78", "#F3AB60"]
-        fig, ax = plt.subplots(figsize=(8, 6))
-        pl = sns.countplot(x=dilworth_preprocessed["Clusters"], palette=pal, ax=ax)
-        ax.set_xlabel('Groups')
-        # pl.set_title("Distribution Of The Clusters")
-        total = len(dilworth_preprocessed["Clusters"])
-        for patch in ax.patches:
-            height = patch.get_height()
-            percentage = f"{(height / total) * 100:.1f}%"
-            ax.annotate(percentage, (patch.get_x() + patch.get_width() / 2, height),
-                        ha="center", va="bottom", fontsize=10)
+  
+        with col1:
+                st.write(':orange[**3D Group Separation:** Groups are visually separated in a 3D space, showcasing distinct patterns and shared similarities among different sets of data.]')
+            # with st.expander(":red[Show 3d Group Separation]"):
+                st.plotly_chart(fig)
+        with col2:
+            st.write(':orange[**Distributions of Groups:** This represents how different groups are spread out, highlighting their size and percentage]')
+            cluster_counts = dilworth_preprocessed["Clusters"].value_counts().reset_index()
+            cluster_counts.columns = ["Clusters", "Count"]
 
-        with st.expander(":red[Show Distribution of Groups]"):
-            st.pyplot(fig)
+            # Calculate percentages
+            cluster_counts["Percentage"] = (cluster_counts["Count"] / cluster_counts["Count"].sum()) * 100
+
+            # Create the bar chart
+            fig = px.bar(
+                cluster_counts,
+                x="Clusters",
+                y="Count",
+                text="Percentage",
+                color="Clusters",
+                color_discrete_sequence=["#682F2F", "#B9C0C9", "#9F8A78", "#F3AB60"],
+                labels={"Clusters": "Groups", "Count": "Count"},
+            )
+
+            # Customize text and layout
+            fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+            fig.update_layout(
+                # title="Distribution of Groups",
+                xaxis_title="Groups",
+                yaxis_title="Count",
+                showlegend=False,
+                template="simple_white",
+            )
+
+            # Show the plot in Streamlit
+            st.plotly_chart(fig)
