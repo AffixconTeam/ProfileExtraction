@@ -218,13 +218,14 @@ def remove_empty_elements_from_string(lst_str):
 # file = st.sidebar.file_uploader('Choose a File')
 # if file is not None:
 datazoo_profile_count = {
-    "Profile": ['Group 1', 'Group 2', 'Group 3', 'Group 4'],
-    "Mailing": ['11,758', '375', '5,431', '4,213'],
-    "Tele Marketing": ['8,789', '230', '4,581', '3,214'],
-    "Mobile": ['422', '23', '303', '74'],
-    "Phone": ['8,074', '189', '4,033', '3,083'],
-    "Email": ['293', '18', '245', '57'],
+    "Profile": ['Group 1', 'Group 2', 'Group 3', 'Group 4','Total'],
+    "Mailing": ['11,758', '375', '5,431', '4,213','21,777'],
+    "Tele Marketing": ['8,789', '230', '4,581', '3,214','16,814'],
+    "Mobile": ['422', '23', '303', '74','822'],
+    "Phone": ['8,074', '189', '4,033', '3,083','15,379'],
+    "Email": ['293', '18', '245', '57','613'],
 }
+
 
 datazoo_profile_df = pd.DataFrame(datazoo_profile_count)
 datazoo_profile_df.set_index('Profile', inplace=True)
