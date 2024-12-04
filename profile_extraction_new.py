@@ -219,11 +219,11 @@ def remove_empty_elements_from_string(lst_str):
 # if file is not None:
 datazoo_profile_count = {
     "Profile": ['Group 1', 'Group 2', 'Group 3', 'Group 4'],
-    "Mailing": ['12345', '375', '4213', '5431'],
-    "Tele Marketing": ['8789', '230', '3214', '4581'],
-    "Mobile": ['422', '23', '74', '303'],
-    "Phone": ['8074', '189', '3083', '4033'],
-    "Email": ['293', '18', '57', '245'],
+    "Mailing": ['11,758', '375', '5,431', '4,213'],
+    "Tele Marketing": ['8,789', '230', '4,581', '3,214'],
+    "Mobile": ['422', '23', '303', '74'],
+    "Phone": ['8,074', '189', '4,033', '3,083'],
+    "Email": ['293', '18', '245', '57'],
 }
 
 datazoo_profile_df = pd.DataFrame(datazoo_profile_count)
