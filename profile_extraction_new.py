@@ -792,7 +792,7 @@ if 1 != 3 :
                 # demog = demog[~demog.index.to_series().str.contains("empty_")]
                 # demog['Category'] = col  # Add category column for clarity
                 demog.columns = ['Percentage', 'Threshold Value']
-                demog.index.name = cols_rename_new[col]
+                # demog.index.name = cols_rename_new[col]
                 demog = demog[['Percentage','Threshold Value']]
                 demog['Propotional Percentage'] = (100/(np.where(col != "IncomeRange",Threshold('ProfileType'),demog["Percentage"] - Threshold('IncomeRange'))))*demog["Percentage"]
                 demog['Index'] = np.ceil(demog['Propotional Percentage'] - 100).astype(int)
